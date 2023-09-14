@@ -33,6 +33,7 @@ use nom::{
     IResult,
 };
 use num_enum::{IntoPrimitive, TryFromPrimitive};
+use tracing::debug;
 use std::convert::TryInto;
 use std::ops::Bound::{Excluded, Included};
 
@@ -205,7 +206,9 @@ impl Serializer<BootstrapServerMessage> for BootstrapServerMessageSerializer {
                 // state
                 self.u64_serializer
                     .serialize(&(state_part.new_elements.len() as u64), buffer)?;
+                debug!("TIM    {slot:?}\tNew elements len: {}", state_part.new_elements.len());
                 for (key, value) in state_part.new_elements.iter() {
+                    debug!("TIM    {slot:?}\t\t- Key len: {}, value len: {}", key.len(), value.len());
                     self.vec_u8_serializer.serialize(key, buffer)?;
                     self.vec_u8_serializer.serialize(value, buffer)?;
                 }
@@ -446,8 +449,12 @@ impl Deserializer<BootstrapServerMessage> for BootstrapServerMessageDeserializer
                                 "Failed new_elements deserialization",
                                 length_count(
                                     context("Failed length deserialization", |input| {
-                                        self.state_new_elements_length_deserializer
-                                            .deserialize(input)
+                                        let res = self.state_new_elements_length_deserializer
+                                            .deserialize(input);
+                                        if let Err(ref e) = res {
+                                            debug!("TIM    length deser failed, length of input: {}", input.len());
+                                        }
+                                        res
                                     }),
                                     tuple((
                                         |input| self.vec_u8_deserializer.deserialize(input),
