@@ -12,3 +12,4 @@ thiserror = {workspace = true}
 nom = {workspace = true}
 unsigned-varint = {workspace = true, "features" = ["nom"]}
 num = {workspace = true}
+tracing = {workspace = true}

@@ -237,7 +237,15 @@ macro_rules! gen_varint {
             impl Deserializer<$type> for $ds {
                 fn deserialize<'a, E: ParseError<&'a [u8]> + ContextError<&'a [u8]>>(&self, buffer: &'a [u8]) -> IResult<&'a [u8], $type, E> {
                     context(concat!("Failed ", stringify!($type), " deserialization"), |input: &'a [u8]| {
-                        let (rest, value) = unsigned_nom::$type(input).map_err(|_| nom::Err::Error(ParseError::from_error_kind(input, nom::error::ErrorKind::Fail)))?;
+                        let (rest, value) = unsigned_nom::$type(input).map_err(|err| {
+                            let msg = match err {
+                                nom::Err::Incomplete(ref e) => format!("Incomplete: {e:?}"),
+                                nom::Err::Error(ref e) => format!("Error kind: {:?}, input length: {:?}", e.code, e.input.len()),
+                                nom::Err::Failure(ref e) => format!("Failure kind: {:?}, input length: {:?}", e.code, e.input.len()),                                    
+                            };
+                            tracing::debug!("TIM    Parsing failed, error: {}", msg);
+                            nom::Err::Error(ParseError::from_error_kind(input, nom::error::ErrorKind::Fail))
+                        })?;
                         if !self.range.contains(&value) {
                             return Err(nom::Err::Error(ParseError::from_error_kind(input, nom::error::ErrorKind::Fail)));
                         }

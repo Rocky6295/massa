@@ -457,8 +457,20 @@ impl Deserializer<BootstrapServerMessage> for BootstrapServerMessageDeserializer
                                         res
                                     }),
                                     tuple((
-                                        |input| self.vec_u8_deserializer.deserialize(input),
-                                        |input| self.vec_u8_deserializer.deserialize(input),
+                                        |input| {
+                                            let res = self.vec_u8_deserializer.deserialize(input);
+                                            if let Err(ref e) = res {
+                                                debug!("TIM    vec_u8 1 deser failed, length of input: {}", input.len());
+                                            }
+                                            res
+                                        },
+                                        |input| {
+                                            let res = self.vec_u8_deserializer.deserialize(input);
+                                            if let Err(ref e) = res {
+                                                debug!("TIM    vec_u8 2 deser failed, length of input: {}", input.len());
+                                            }
+                                            res
+                                        },
                                     )),
                                 ),
                             ),
